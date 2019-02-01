@@ -106,10 +106,11 @@ class CompilationException(RuntimeException):
 class RecursionException(RuntimeException):
     pass
 
+class ExternalDependencyException(RuntimeException):
+    pass
 
 class ValidationException(RuntimeException):
     pass
-
 
 class JSONValidationException(ValidationException):
     def __init__(self, typename, errors):

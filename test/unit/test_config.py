@@ -177,7 +177,7 @@ class BaseFileTest(BaseConfigTest):
         except EnvironmentError:
             pass
 
-    def proejct_path(self, name):
+    def project_path(self, name):
         return os.path.join(self.project_dir, name)
 
     def profile_path(self, name):

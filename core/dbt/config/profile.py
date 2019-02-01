@@ -9,6 +9,7 @@ from dbt.exceptions import DbtProfileError
 from dbt.exceptions import DbtProjectError
 from dbt.exceptions import ValidationException
 from dbt.exceptions import RuntimeException
+from dbt.exceptions import ExternalDependencyException
 from dbt.logger import GLOBAL_LOGGER as logger
 from dbt.utils import parse_cli_vars
 
@@ -28,6 +29,10 @@ dbt encountered an error while trying to read your profiles.yml file.
 {error_string}
 """
 
+AWS_SECRET_ERROR = """\
+dbt was unable to retrieve your profile secret.
+{error_string}
+"""
 
 NO_SUPPLIED_PROFILE_ERROR = """\
 dbt cannot run because no profile was specified for this dbt project.
@@ -50,7 +55,18 @@ def read_profile(profiles_dir):
     if os.path.isfile(path):
         try:
             contents = load_file_contents(path, strip=False)
-            return load_yaml_text(contents)
+            loaded_yaml = load_yaml_text(contents)
+
+            ## option to pull from aws secret manager
+            if 'aws_secret' in loaded_yaml.keys():
+                try: 
+                    sm_client = boto3.client('secretsmanager')
+                    return sm_client.get_secret_value(loaded_yaml['aws_secret'])
+                except ExternalDependencyException as e:
+                    msg = AWS_MESSAGE.format(error_string=e)
+                    raise ExternalDependencyException(msg)
+            else: 
+                return load_yaml_text(contents)
         except ValidationException as e:
             msg = INVALID_PROFILE_MESSAGE.format(error_string=e)
             raise ValidationException(msg)
